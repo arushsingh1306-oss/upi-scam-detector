@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scam Message Detector</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 50px 20px;
+    }
+
+    header {
+        text-align: center;
+        margin-bottom: 35px;
+        color: white;
+    }
+
+    .shield-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+    }
+
+    header h1 {
+        font-size: 2.4rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    header p {
+        color: rgba(255,255,255,0.85);
+        margin-top: 8px;
+        font-size: 1.05rem;
+    }
+
+    .container {
+        background: white;
+        width: 100%;
+        max-width: 650px;
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        padding: 34px;
+        margin-bottom: 25px;
+    }
+
+    .input-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    textarea {
+        width: 100%;
+        min-height: 130px;
+        padding: 16px;
+        border-radius: 12px;
+        border: 2px solid #e3e6ee;
+        font-size: 1rem;
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea:focus {
+        border-color: #764ba2;
+        box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.12);
+    }
+
+    button {
+        margin-top: 16px;
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.05rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s;
+        box-shadow: 0 6px 16px rgba(118, 75, 162, 0.3);
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 22px rgba(118, 75, 162, 0.4);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    button:disabled {
+        background: #b9bcd4;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .result {
+        margin-top: 24px;
+        padding: 22px;
+        border-radius: 14px;
+        display: none;
+        animation: fadeIn 0.35s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result.safe {
+        background: linear-gradient(135deg, #e8f9ef, #d5f3e0);
+        border: 1px solid #4caf50;
+    }
+
+    .result.scam {
+        background: linear-gradient(135deg, #fdecec, #fbdada);
+        border: 1px solid #e53935;
+    }
+
+    .result.suspicious {
+        background: linear-gradient(135deg, #fff8e1, #ffedb3);
+        border: 1px solid #f9a825;
+    }
+
+    .result-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .result-emoji {
+        font-size: 1.8rem;
+    }
+
+    .result-label {
+        font-size: 1.35rem;
+        font-weight: 700;
+        text-transform: capitalize;
+    }
+
+    .safe .result-label { color: #2e7d32; }
+    .scam .result-label { color: #c62828; }
+    .suspicious .result-label { color: #ef6c00; }
+
+    .confidence-bar-wrap {
+        margin: 12px 0 16px;
+    }
+
+    .confidence-text {
+        font-size: 0.9rem;
+        color: #444;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .confidence-bar-bg {
+        background: rgba(0,0,0,0.08);
+        border-radius: 20px;
+        height: 10px;
+        overflow: hidden;
+    }
+
+    .confidence-bar-fill {
+        height: 100%;
+        border-radius: 20px;
+        transition: width 0.5s ease;
+        width: 0%;
+    }
+
+    .safe .confidence-bar-fill { background: #4caf50; }
+    .scam .confidence-bar-fill { background: #e53935; }
+    .suspicious .confidence-bar-fill { background: #f9a825; }
+
+    .reasons {
+        font-size: 0.9rem;
+        color: #444;
+    }
+
+    .reasons strong {
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .reasons ul {
+        margin-left: 20px;
+    }
+
+    .reasons li {
+        margin-bottom: 4px;
+    }
+
+    .stats {
+        display: flex;
+        gap: 16px;
+        width: 100%;
+        max-width: 650px;
+        margin-top: 6px;
+    }
+
+    .stat-card {
+        flex: 1;
+        background: rgba(255,255,255,0.95);
+        border-radius: 14px;
+        padding: 18px 10px;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .stat-card .num {
+        font-size: 1.7rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-card .label {
+        font-size: 0.78rem;
+        color: #666;
+        margin-top: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .loading {
+        text-align: center;
+        color: white;
+        margin-top: 14px;
+        display: none;
+        font-weight: 500;
+    }
+
+    footer {
+        margin-top: 35px;
+        color: rgba(255,255,255,0.75);
+        font-size: 0.85rem;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="shield-icon">🛡️</div>
+    <h1>Scam Message Detector</h1>
+    <p>Paste any SMS or UPI message below to check if it's safe or a scam</p>
+</header>
+
+<div class="container">
+    <label class="input-label" for="messageInput">Message to check</label>
+    <textarea id="messageInput" placeholder="Example: Dear customer your KYC will expire today. Click here to update..."></textarea>
+    <button id="analyzeBtn" onclick="analyzeMessage()">Analyze Message</button>
+    <div class="loading" id="loading">Analyzing...</div>
+
+    <div class="result" id="resultBox">
+        <div class="result-top">
+            <span class="result-emoji" id="resultEmoji"></span>
+            <span class="result-label" id="resultLabel"></span>
+        </div>
+        <div class="confidence-bar-wrap">
+            <div class="confidence-text" id="resultConfidence"></div>
+            <div class="confidence-bar-bg">
+                <div class="confidence-bar-fill" id="confidenceBar"></div>
+            </div>
+        </div>
+        <div class="reasons">
+            <strong>Why this result:</strong>
+            <ul id="resultReasons"></ul>
+        </div>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat-card">
+        <div class="num" id="statTotal">0</div>
+        <div class="label">Scanned</div>
+    </div>
+    <div class="stat-card">
+        <div class="num" id="statScam">0</div>
+        <div class="label">Scam Found</div>
+    </div>
+    <div class="stat-card">
+        <div class="num" id="statSafe">0</div>
+        <div class="label">Safe</div>
+    </div>
+</div>
+
+<footer>
+    AI-Powered UPI &amp; Scam Message Detector &mdash; Mini Project
+</footer>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000";
+
+    async function analyzeMessage() {
+        const text = document.getElementById("messageInput").value.trim();
+        if (!text) {
+            alert("Please paste a message first.");
+            return;
+        }
+
+        const btn = document.getElementById("analyzeBtn");
+        const loading = document.getElementById("loading");
+        const resultBox = document.getElementById("resultBox");
+
+        btn.disabled = true;
+        loading.style.display = "block";
+        resultBox.style.display = "none";
+
+        try {
+            const response = await fetch(`${API_URL}/analyze`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text }),
+            });
+
+            const data = await response.json();
+            showResult(data);
+            updateStats();
+        } catch (err) {
+            alert("Could not connect to the server. Make sure the backend is running.");
+        } finally {
+            btn.disabled = false;
+            loading.style.display = "none";
+        }
+    }
+
+    function showResult(data) {
+        const resultBox = document.getElementById("resultBox");
+        const emoji = document.getElementById("resultEmoji");
+        const label = document.getElementById("resultLabel");
+        const confidence = document.getElementById("resultConfidence");
+        const bar = document.getElementById("confidenceBar");
+        const reasons = document.getElementById("resultReasons");
+
+        resultBox.className = "result " + data.prediction;
+        resultBox.style.display = "block";
+        bar.style.width = "0%";
+
+        const emojiMap = { scam: "🚨", suspicious: "⚠️", safe: "✅" };
+        emoji.textContent = emojiMap[data.prediction] || "";
+        label.textContent = data.prediction;
+        confidence.textContent = `Confidence: ${data.confidence}%`;
+
+        setTimeout(() => {
+            bar.style.width = data.confidence + "%";
+        }, 50);
+
+        reasons.innerHTML = "";
+        data.reasons.forEach((r) => {
+            const li = document.createElement("li");
+            li.textContent = r;
+            reasons.appendChild(li);
+        });
+    }
+
+    async function updateStats() {
+        try {
+            const response = await fetch(`${API_URL}/stats`);
+            const data = await response.json();
+            document.getElementById("statTotal").textContent = data.total_scanned;
+            document.getElementById("statScam").textContent = data.scam_detected;
+            document.getElementById("statSafe").textContent = data.safe_messages;
+        } catch (err) {
+            console.log("Could not fetch stats");
+        }
+    }
+
+    updateStats();
+</script>
+
+</body>
+</html>
